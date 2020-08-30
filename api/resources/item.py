@@ -1,11 +1,12 @@
 import json
 import falcon
-import sqlite3
 from api.schemas.item_schema import ItemSchema
 from api.hooks.request_body_validator import validate_req_body
 from api.models.item import ItemModel
+from db import db
 
-class Item():
+
+class Item:
 
     post_request_schema = ItemSchema()
     put_request_schema = ItemSchema()
@@ -14,12 +15,12 @@ class Item():
         """Fetch item called name from items list"""
 
         item = ItemModel.find_by_name(name)
-        
+
         if item:
             resp.body = json.dumps(item.json(), ensure_ascii=False)
             resp.status = falcon.HTTP_200
         else:
-            resp.body = json.dumps({"message":"Item not found"}, ensure_ascii=False)
+            resp.body = json.dumps({"message": "Item not found"}, ensure_ascii=False)
             resp.status = falcon.HTTP_404  # Not Found
 
         # req.media will deserialize json object
@@ -42,9 +43,9 @@ class Item():
             # data = json.loads(req.bounded_stream.read()) #Return type - dict
             # data = req.bounded_stream.read().decode("utf-8") #Return type - str
             # data = json.loads(req.bounded_stream.read().decode("utf-8")) #Return type - dict
-            
+
             data = req.context.get("json")
-            item = ItemModel(name,data.get("price"))
+            item = ItemModel(name, data.get("price"), data.get("store_id"))
 
             try:
                 item.save_to_db()
@@ -52,9 +53,10 @@ class Item():
                 msg = "An error occured inserting the item"
                 raise falcon.HTTPInternalServerError("Internal Server Error", msg)
             else:
-                resp.body = json.dumps({"message":"Item added successfully"}, ensure_ascii=False)
+                resp.body = json.dumps(
+                    {"message": "Item added successfully"}, ensure_ascii=False
+                )
                 resp.status = falcon.HTTP_201
-            
 
     def on_delete(self, req, resp, name):
         """Delete item called name from items list"""
@@ -68,7 +70,7 @@ class Item():
     @falcon.before(validate_req_body)
     def on_put(self, req, resp, name):
         """Insert/Update an item called name into items list"""
-        
+
         if ItemModel.validate_name(name):
             msg = "Invalid Request"
             raise falcon.HTTPBadRequest("Bad Request", msg)
@@ -79,7 +81,7 @@ class Item():
             if item is None:
 
                 try:
-                    item = ItemModel(name,data.get("price"))
+                    item = ItemModel(name, data.get("price"), data.get("store_id"))
                 except Exception as e:
                     msg = "An error occured inserting the item"
                     raise falcon.HTTPInternalServerError("Internal Server Error", msg)
@@ -87,7 +89,7 @@ class Item():
                     resp.body = json.dumps({"item": item.json()}, ensure_ascii=False)
                     resp.status = falcon.HTTP_201
             else:
-                
+
                 try:
                     item.price = data.get("price")
                 except Exception as e:
@@ -100,15 +102,12 @@ class Item():
             item.save_to_db()
 
 
-class ItemList():
+class ItemList:
     def on_get(self, req, resp):
-        with sqlite3.connect("data.db") as connection:
-            cursor = connection.cursor()
-            query = "SELECT * FROM items" 
-            result = cursor.execute(query) 
-            items = []
-            for row in result:  
-                items.append({"name":row[1], "price":row[2]})
-        
-        resp.body = json.dumps({"items": items}, ensure_ascii=False)
-        resp.status = falcon.HTTP_200
+
+        with db.manager.session_scope() as session:
+            resp.body = json.dumps(
+                {"items": [item.json() for item in session.query(ItemModel).all()]},
+                ensure_ascii=False,
+            )
+            resp.status = falcon.HTTP_200

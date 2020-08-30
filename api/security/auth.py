@@ -7,24 +7,22 @@ from api.config.main_config import SECRET
 from api.schemas.auth_schema import AuthSchema
 
 
-
-
-
 class JWTIssuer:
     """Issues JWTs, to authenticated users"""
 
     schema = AuthSchema()
 
     @classmethod
-    def _issue(cls, claims: dict, expire: datetime = datetime.utcnow() + timedelta(days=5)) -> str:
+    def _issue(
+        cls, claims: dict, expire: datetime = datetime.utcnow() + timedelta(days=5)
+    ) -> str:
 
         """Create JWT Token"""
         claims["exp"] = expire
         claims["iat"] = datetime.utcnow()
         claims["nbf"] = claims["iat"] - timedelta(seconds=60)
         token = jwt.encode(claims, SECRET, algorithm="HS256")
-        return {"access_token" : token.decode("utf-8")}
-    
+        return {"access_token": token.decode("utf-8")}
 
     def on_post(self, req, resp):
         try:
@@ -39,7 +37,9 @@ class JWTIssuer:
             username = authenticate_user(username, password)
 
             if username:
-                resp.body = json.dumps(JWTIssuer._issue({"username": username}),ensure_ascii=False)
+                resp.body = json.dumps(
+                    JWTIssuer._issue({"username": username}), ensure_ascii=False
+                )
             else:
                 msg = "Invalid Credentials"
                 raise falcon.HTTPBadRequest("Bad Request", msg)

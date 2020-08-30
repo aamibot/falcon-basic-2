@@ -1,28 +1,27 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from db import db
-from api.models.store import Base
+
+Base = declarative_base()
 
 
-class ItemModel(Base):
-    __tablename__ = "items"
+class StoreModel(Base):
+    __tablename__ = "stores"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(80))
-    price = Column(Float(precision=2))
 
-    store_id = Column(Integer, ForeignKey("stores.id"))
-    store = relationship("StoreModel")
+    items = relationship(
+        "ItemModel", lazy="dynamic", backref="stores"
+    )  # Many to one(type-list)
 
-    def __init__(self, name, price, store_id):
+    def __init__(self, name):
         super().__init__()
         self.name = name
-        self.price = price
-        self.store_id = store_id
 
     def json(self):
-        return {"name": self.name, "price": self.price}
+        return {"name": self.name, "items": [item.json() for item in self.items.all()]}
 
     @classmethod
     def validate_name(cls, name):
@@ -41,7 +40,7 @@ class ItemModel(Base):
         with db.manager.session_scope() as session:
             session.expire_on_commit = False
             return (
-                session.query(ItemModel).filter_by(name=name).first()
+                session.query(StoreModel).filter_by(name=name).first()
             )  # SELECT * FROM items WHERE name=name LIMIT 1
 
     def save_to_db(self):
