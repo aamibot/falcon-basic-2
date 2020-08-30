@@ -4,10 +4,13 @@ import falcon_sqla
 from sqlalchemy import MetaData
 from sqlalchemy import Table
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=None, verbose=False, override=False)
 
 
 def get_url():
-    return os.getenv("DATABASE_URL", "sqlite:///data.db")
+    return os.getenv("DATABASE_URL")
 
 
 class SessionScope(object):
