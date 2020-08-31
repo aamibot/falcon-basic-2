@@ -50,7 +50,7 @@ class Item:
             try:
                 item.save_to_db()
             except Exception as e:
-                msg = "An error occured inserting the item"
+                msg = f"An error occured inserting the item - Exception:{e}"
                 raise falcon.HTTPInternalServerError("Internal Server Error", msg)
             else:
                 resp.body = json.dumps(
