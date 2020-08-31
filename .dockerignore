@@ -3,7 +3,7 @@
 .gitignore
 .gitattributes
 __pycache__
-data.db
+*.db
 *.env
 *.yml
 *.list
