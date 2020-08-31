@@ -3,7 +3,7 @@ FROM python:3.7-slim-buster
 COPY requirements.txt .
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends --fix-missing \
+    && apt-get install -y --fix-missing \
     libpq-dev \
     gcc \
     && pip install --no-cache-dir -r requirements.txt  \
