@@ -1,0 +1,11 @@
+.vscode
+.git
+.gitignore
+.gitattributes
+__pycache__
+data.db
+*.env
+*.yml
+*.list
+*.md
+Dockerfile*
